@@ -253,6 +253,71 @@ The system validates.
 The user confirms side effects.
 The tools execute and verify.
 
+## Controlled ask
+
+The `ask` command combines LLM command proposal and controlled execution.
+
+Example:
+
+```bash
+local-assistant \
+  --vault-path examples/sample_vault \
+  ask "cerca Vault nelle note"
+```
+
+The flow is:
+
+```text
+Natural language request
+  ↓
+LLM proposes a structured command
+  ↓
+system validates the proposal
+  ↓
+read/search operations execute immediately
+  ↓
+write operations require confirmation
+```
+
+Read-only example:
+
+```bash
+local-assistant \
+  --vault-path examples/sample_vault \
+  ask "leggi la nota welcome.md"
+```
+
+Write example without confirmation:
+
+```bash
+local-assistant \
+  --vault-path examples/sample_vault \
+  ask "crea la nota ask-test.md con contenuto # Test"
+```
+
+This fails with:
+
+```text
+CONFIRMATION_REQUIRED
+```
+
+Write example with confirmation:
+
+```bash
+local-assistant \
+  --vault-path examples/sample_vault \
+  ask "crea la nota ask-test.md con contenuto # Test" \
+  --confirm
+```
+
+The `ask` command is not an autonomous agent loop.
+
+The LLM proposes.
+The system validates.
+The user confirms side effects.
+The orchestrator executes.
+The tools verify.
+
 ## Repository scope
 
 This repository contains:

@@ -384,3 +384,84 @@ Human confirms side effects.
 Tools execute.
 Tools verify.
 ```
+
+
+## Controlled ask command
+
+The controlled `ask` command is the first convenient natural-language interface.
+
+Flow:
+
+```text
+User request
+  ↓
+ControlledAsk
+  ↓
+CommandProposer
+  ↓
+CommandProposalValidator
+  ↓
+ExecuteCommandProposal
+  ↓
+Orchestrator
+  ↓
+VaultAgent
+  ↓
+Vault tools
+```
+
+The command may execute read-only operations immediately.
+
+Current read-only operations:
+
+- `read_note`
+- `search_notes`
+
+The command must not execute write operations unless `--confirm` is passed.
+
+Current write operations:
+
+- `append_note`
+- `write_note`
+
+Example:
+
+```bash
+local-assistant ask "cerca Salesforce"
+```
+
+Write example:
+
+```bash
+local-assistant ask "crea la nota idee/test.md con contenuto # Test"
+```
+
+This must fail with:
+
+```text
+CONFIRMATION_REQUIRED
+```
+
+Confirmed write:
+
+```bash
+local-assistant ask "crea la nota idee/test.md con contenuto # Test" --confirm
+```
+
+### Development rule
+
+Do not add autonomous loops on top of `ask`.
+
+`ask` is a one-step controlled command:
+
+```text
+one user request
+  ↓
+one proposal
+  ↓
+one validation
+  ↓
+zero or one execution
+```
+
+Any future multi-step behavior must be introduced as a separate architectural decision.
