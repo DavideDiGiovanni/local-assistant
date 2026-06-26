@@ -222,3 +222,117 @@ def test_cli_propose_command(monkeypatch, capsys):
     assert "success: True" in captured.out
     assert "operation: search_notes" in captured.out
     assert "Salesforce" in captured.out
+
+
+def test_cli_execute_proposal_read_note(tmp_path, capsys):
+    import json
+
+    note = tmp_path / "note.md"
+    note.write_text("# Test", encoding="utf-8")
+
+    proposal_file = tmp_path / "proposal.json"
+    proposal_file.write_text(
+        json.dumps(
+            {
+                "domain": "vault",
+                "operation": "read_note",
+                "arguments": {
+                    "relative_path": "note.md",
+                },
+                "explanation": "Read note.",
+                "requires_confirmation": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from local_assistant.cli import run_cli
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "execute-proposal",
+            str(proposal_file),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "success: True" in captured.out
+    assert "# Test" in captured.out
+
+
+def test_cli_execute_proposal_write_requires_confirmation(tmp_path, capsys):
+    import json
+
+    proposal_file = tmp_path / "proposal.json"
+    proposal_file.write_text(
+        json.dumps(
+            {
+                "domain": "vault",
+                "operation": "write_note",
+                "arguments": {
+                    "relative_path": "note.md",
+                    "content": "# Test",
+                },
+                "explanation": "Write note.",
+                "requires_confirmation": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from local_assistant.cli import run_cli
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "execute-proposal",
+            str(proposal_file),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "CONFIRMATION_REQUIRED" in captured.out
+    assert not (tmp_path / "note.md").exists()
+
+
+def test_cli_execute_proposal_write_with_confirmation(tmp_path):
+    import json
+
+    proposal_file = tmp_path / "proposal.json"
+    proposal_file.write_text(
+        json.dumps(
+            {
+                "domain": "vault",
+                "operation": "write_note",
+                "arguments": {
+                    "relative_path": "note.md",
+                    "content": "# Test",
+                },
+                "explanation": "Write note.",
+                "requires_confirmation": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from local_assistant.cli import run_cli
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "execute-proposal",
+            str(proposal_file),
+            "--confirm",
+        ]
+    )
+
+    assert exit_code == 0
+    assert (tmp_path / "note.md").read_text(encoding="utf-8") == "# Test"

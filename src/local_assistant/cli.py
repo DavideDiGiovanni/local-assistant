@@ -4,6 +4,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Sequence
 
+from local_assistant.actions.execute_command_proposal import ExecuteCommandProposal
 from local_assistant.config.settings import AppSettings, load_settings
 from local_assistant.llm.command_proposer import CommandProposer
 from local_assistant.llm.ollama_provider import OllamaProvider
@@ -107,6 +108,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     propose_parser.add_argument("request")
 
+    execute_proposal_parser = subparsers.add_parser(
+        "execute-proposal",
+        help="Execute a validated command proposal JSON file.",
+    )
+    execute_proposal_parser.add_argument("proposal_file")
+    execute_proposal_parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Confirm execution of proposals that modify the Vault.",
+    )
+
     return parser
 
 
@@ -155,6 +167,14 @@ def execute_command(
         proposer = CommandProposer(llm_provider)
 
         return proposer.propose(args.request)
+
+    if args.command == "execute-proposal":
+        executor = ExecuteCommandProposal(orchestrator)
+
+        return executor.execute_from_file(
+            proposal_file=args.proposal_file,
+            confirm=args.confirm,
+        )
 
     return OrchestratorResult(
         success=False,
