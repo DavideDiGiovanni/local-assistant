@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
 @dataclass(frozen=True)
 class AppSettings:
     """
@@ -10,8 +13,8 @@ class AppSettings:
 
     Settings are read from environment variables.
 
-    This keeps personal paths, local model choices and provider-specific
-    endpoints outside the source code.
+    This keeps personal paths, local model choices, prompt locations and
+    provider-specific endpoints outside the source code.
     """
 
     llm_provider: str
@@ -19,6 +22,7 @@ class AppSettings:
     ollama_base_url: str
     ollama_timeout_seconds: int
     vault_path: Path
+    prompts_path: Path
 
 
 def load_settings() -> AppSettings:
@@ -29,5 +33,11 @@ def load_settings() -> AppSettings:
         ollama_timeout_seconds=int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "120")),
         vault_path=Path(
             os.getenv("LOCAL_ASSISTANT_VAULT_PATH", "examples/sample_vault")
+        ).expanduser(),
+        prompts_path=Path(
+            os.getenv(
+                "LOCAL_ASSISTANT_PROMPTS_PATH",
+                str(PROJECT_ROOT / "prompts"),
+            )
         ).expanduser(),
     )

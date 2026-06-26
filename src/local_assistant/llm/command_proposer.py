@@ -18,14 +18,19 @@ class CommandProposer:
     The LLM does not execute anything.
 
     It only proposes a JSON command that is then validated locally.
+    The prompt template is loaded outside this class and injected.
     """
+
+    REQUEST_PLACEHOLDER = "{{request}}"
 
     def __init__(
         self,
         llm_provider: BaseLLMProvider,
+        prompt_template: str,
         validator: CommandProposalValidator | None = None,
     ) -> None:
         self.llm_provider = llm_provider
+        self.prompt_template = prompt_template
         self.validator = validator or CommandProposalValidator()
 
     def propose(self, request: str) -> CommandProposalResult:
@@ -88,62 +93,12 @@ class CommandProposer:
         )
 
     def _build_prompt(self, request: str) -> str:
-        return f"""You are a command proposal engine for a local assistant.
+        if self.REQUEST_PLACEHOLDER not in self.prompt_template:
+            raise ValueError(
+                f"Prompt template must contain {self.REQUEST_PLACEHOLDER} placeholder."
+            )
 
-You do not execute commands. You only translate a natural language request into one structured JSON object.
-
-The assistant currently supports only the "vault" domain.
-
-Allowed operations:
-
-1. read_note
-Required arguments:
-- relative_path
-
-2. search_notes
-Required arguments:
-- query
-
-3. append_note
-Required arguments:
-- relative_path
-- content
-
-4. write_note
-Required arguments:
-- relative_path
-- content
-Optional arguments:
-- overwrite
-
-Rules:
-- Return JSON only.
-- Do not use Markdown.
-- Do not add explanations outside the JSON object.
-- Do not invent unsupported domains.
-- Do not invent unsupported operations.
-- Use relative paths only.
-- Never use absolute paths.
-- Never use paths containing "..".
-- For write operations, set requires_confirmation to true.
-- For read_note and search_notes, requires_confirmation may be false.
-- If the request is unsupported, return domain "unsupported" and operation "unsupported".
-
-JSON schema:
-
-{{
-  "domain": "vault",
-  "operation": "search_notes",
-  "arguments": {{
-    "query": "example"
-  }},
-  "requires_confirmation": false,
-  "explanation": "Short explanation of the proposed command."
-}}
-
-User request:
-
-{request}"""
+        return self.prompt_template.replace(self.REQUEST_PLACEHOLDER, request)
 
     def _extract_json_object(self, raw_response: str) -> dict[str, Any]:
         start = raw_response.find("{")

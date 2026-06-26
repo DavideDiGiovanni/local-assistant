@@ -13,6 +13,10 @@ from local_assistant.models.ask_result import AskResult
 from local_assistant.models.command_proposal import CommandProposalResult
 from local_assistant.models.orchestrator_result import OrchestratorResult
 from local_assistant.orchestrator.orchestrator import Orchestrator
+from local_assistant.prompting.prompt_loader import PromptLoader
+
+
+COMMAND_PROPOSAL_PROMPT = "system/command_proposal.md"
 
 
 def run_cli(argv: Sequence[str] | None = None) -> int:
@@ -28,7 +32,14 @@ def run_cli(argv: Sequence[str] | None = None) -> int:
 
     orchestrator = Orchestrator(vault_path)
 
-    result = execute_command(orchestrator, args, settings)
+    try:
+        result = execute_command(orchestrator, args, settings)
+    except Exception as exc:
+        print("success: False")
+        print("message: Command failed before execution.")
+        print(f"error: {type(exc).__name__}")
+        print(f"details: {exc}")
+        return 1
 
     if args.json:
         print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
@@ -177,7 +188,11 @@ def execute_command(
 
     if args.command == "propose":
         llm_provider = build_llm_provider(settings)
-        proposer = CommandProposer(llm_provider)
+        prompt_template = load_command_proposal_prompt(settings)
+        proposer = CommandProposer(
+            llm_provider=llm_provider,
+            prompt_template=prompt_template,
+        )
 
         return proposer.propose(args.request)
 
@@ -191,9 +206,11 @@ def execute_command(
 
     if args.command == "ask":
         llm_provider = build_llm_provider(settings)
+        prompt_template = load_command_proposal_prompt(settings)
 
         ask_action = ControlledAsk(
             llm_provider=llm_provider,
+            prompt_template=prompt_template,
             orchestrator=orchestrator,
         )
 
@@ -224,6 +241,11 @@ def build_llm_provider(settings: AppSettings) -> OllamaProvider:
     )
 
 
+def load_command_proposal_prompt(settings: AppSettings) -> str:
+    loader = PromptLoader(settings.prompts_path)
+    return loader.load(COMMAND_PROPOSAL_PROMPT)
+
+
 def resolve_content(
     inline_content: str | None,
     content_file: str | None,
@@ -240,7 +262,9 @@ def resolve_content(
     return ""
 
 
-def print_human_result(result: OrchestratorResult | CommandProposalResult | AskResult) -> None:
+def print_human_result(
+    result: OrchestratorResult | CommandProposalResult | AskResult,
+) -> None:
     if isinstance(result, AskResult):
         print(f"success: {result.success}")
         print(f"message: {result.message}")

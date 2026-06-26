@@ -2,6 +2,8 @@ from local_assistant.actions.controlled_ask import ControlledAsk
 from local_assistant.llm.base_provider import BaseLLMProvider
 from local_assistant.orchestrator.orchestrator import Orchestrator
 
+PROMPT_TEMPLATE = "User request:\n{{request}}"
+
 
 class FakeLLMProvider(BaseLLMProvider):
     def __init__(self, response: str) -> None:
@@ -31,6 +33,7 @@ def test_controlled_ask_executes_search_notes(tmp_path):
 
     action = ControlledAsk(
         llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
         orchestrator=Orchestrator(tmp_path),
     )
 
@@ -63,6 +66,7 @@ def test_controlled_ask_executes_read_note(tmp_path):
 
     action = ControlledAsk(
         llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
         orchestrator=Orchestrator(tmp_path),
     )
 
@@ -93,6 +97,7 @@ def test_controlled_ask_requires_confirmation_for_write(tmp_path):
 
     action = ControlledAsk(
         llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
         orchestrator=Orchestrator(tmp_path),
     )
 
@@ -124,6 +129,7 @@ def test_controlled_ask_writes_when_confirmed(tmp_path):
 
     action = ControlledAsk(
         llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
         orchestrator=Orchestrator(tmp_path),
     )
 
@@ -155,6 +161,7 @@ def test_controlled_ask_requires_confirmation_for_append(tmp_path):
 
     action = ControlledAsk(
         llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
         orchestrator=Orchestrator(tmp_path),
     )
 
@@ -186,6 +193,7 @@ def test_controlled_ask_appends_when_confirmed(tmp_path):
 
     action = ControlledAsk(
         llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
         orchestrator=Orchestrator(tmp_path),
     )
 
@@ -200,6 +208,7 @@ def test_controlled_ask_returns_proposal_error(tmp_path):
 
     action = ControlledAsk(
         llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
         orchestrator=Orchestrator(tmp_path),
     )
 

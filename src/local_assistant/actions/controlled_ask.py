@@ -21,12 +21,14 @@ class ControlledAsk:
     def __init__(
         self,
         llm_provider: BaseLLMProvider,
+        prompt_template: str,
         orchestrator: Orchestrator,
         validator: CommandProposalValidator | None = None,
     ) -> None:
         self.validator = validator or CommandProposalValidator()
         self.proposer = CommandProposer(
             llm_provider=llm_provider,
+            prompt_template=prompt_template,
             validator=self.validator,
         )
         self.executor = ExecuteCommandProposal(

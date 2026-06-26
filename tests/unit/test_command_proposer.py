@@ -1,5 +1,9 @@
+import pytest
+
 from local_assistant.llm.base_provider import BaseLLMProvider
 from local_assistant.llm.command_proposer import CommandProposer
+
+PROMPT_TEMPLATE = "User request:\n{{request}}"
 
 
 class FakeLLMProvider(BaseLLMProvider):
@@ -25,7 +29,7 @@ def test_command_proposer_search_notes_success():
         """
     )
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("cerca Salesforce")
 
     assert result.success is True
@@ -51,7 +55,7 @@ def test_command_proposer_read_note_success():
         """
     )
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("leggi welcome.md")
 
     assert result.success is True
@@ -76,7 +80,7 @@ def test_command_proposer_forces_confirmation_for_write_operations():
         """
     )
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("crea una nota")
 
     assert result.success is True
@@ -88,7 +92,7 @@ def test_command_proposer_forces_confirmation_for_write_operations():
 def test_command_proposer_rejects_invalid_json():
     llm = FakeLLMProvider("not json")
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("cerca Salesforce")
 
     assert result.success is False
@@ -110,7 +114,7 @@ def test_command_proposer_rejects_unsupported_domain():
         """
     )
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("lista i file")
 
     assert result.success is False
@@ -132,7 +136,7 @@ def test_command_proposer_rejects_unsupported_operation():
         """
     )
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("elimina note.md")
 
     assert result.success is False
@@ -152,7 +156,7 @@ def test_command_proposer_rejects_missing_required_argument():
         """
     )
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("leggi la nota")
 
     assert result.success is False
@@ -174,7 +178,7 @@ def test_command_proposer_rejects_unsafe_relative_path():
         """
     )
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("leggi file esterno")
 
     assert result.success is False
@@ -184,8 +188,20 @@ def test_command_proposer_rejects_unsafe_relative_path():
 def test_command_proposer_rejects_empty_request():
     llm = FakeLLMProvider("{}")
 
-    proposer = CommandProposer(llm)
+    proposer = CommandProposer(llm, prompt_template=PROMPT_TEMPLATE)
     result = proposer.propose("   ")
 
     assert result.success is False
     assert result.error == "EMPTY_REQUEST"
+
+
+def test_command_proposer_requires_request_placeholder():
+    llm = FakeLLMProvider("{}")
+
+    proposer = CommandProposer(
+        llm,
+        prompt_template="Prompt without placeholder",
+    )
+
+    with pytest.raises(ValueError):
+        proposer.propose("cerca Salesforce")

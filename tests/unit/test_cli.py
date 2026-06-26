@@ -207,9 +207,16 @@ def test_cli_propose_command(monkeypatch, capsys):
     def fake_build_llm_provider(settings):
         return FakeLLMProvider()
 
+    def fake_load_prompt(settings):
+        return "User request:\n{{request}}"
+
     monkeypatch.setattr(
         "local_assistant.cli.build_llm_provider",
         fake_build_llm_provider,
+    )
+    monkeypatch.setattr(
+        "local_assistant.cli.load_command_proposal_prompt",
+        fake_load_prompt,
     )
 
     from local_assistant.cli import run_cli
@@ -358,9 +365,16 @@ def test_cli_ask_executes_search_notes(monkeypatch, tmp_path, capsys):
     def fake_build_llm_provider(settings):
         return FakeLLMProvider()
 
+    def fake_load_prompt(settings):
+        return "User request:\n{{request}}"
+
     monkeypatch.setattr(
         "local_assistant.cli.build_llm_provider",
         fake_build_llm_provider,
+    )
+    monkeypatch.setattr(
+        "local_assistant.cli.load_command_proposal_prompt",
+        fake_load_prompt,
     )
 
     note = tmp_path / "note.md"
@@ -406,9 +420,16 @@ def test_cli_ask_write_requires_confirmation(monkeypatch, tmp_path, capsys):
     def fake_build_llm_provider(settings):
         return FakeLLMProvider()
 
+    def fake_load_prompt(settings):
+        return "User request:\n{{request}}"
+
     monkeypatch.setattr(
         "local_assistant.cli.build_llm_provider",
         fake_build_llm_provider,
+    )
+    monkeypatch.setattr(
+        "local_assistant.cli.load_command_proposal_prompt",
+        fake_load_prompt,
     )
 
     from local_assistant.cli import run_cli
@@ -450,9 +471,16 @@ def test_cli_ask_write_with_confirmation(monkeypatch, tmp_path):
     def fake_build_llm_provider(settings):
         return FakeLLMProvider()
 
+    def fake_load_prompt(settings):
+        return "User request:\n{{request}}"
+
     monkeypatch.setattr(
         "local_assistant.cli.build_llm_provider",
         fake_build_llm_provider,
+    )
+    monkeypatch.setattr(
+        "local_assistant.cli.load_command_proposal_prompt",
+        fake_load_prompt,
     )
 
     from local_assistant.cli import run_cli
