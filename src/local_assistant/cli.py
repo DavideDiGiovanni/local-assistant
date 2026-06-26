@@ -4,7 +4,10 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Sequence
 
-from local_assistant.config.settings import load_settings
+from local_assistant.config.settings import AppSettings, load_settings
+from local_assistant.llm.command_proposer import CommandProposer
+from local_assistant.llm.ollama_provider import OllamaProvider
+from local_assistant.models.command_proposal import CommandProposalResult
 from local_assistant.models.orchestrator_result import OrchestratorResult
 from local_assistant.orchestrator.orchestrator import Orchestrator
 
@@ -22,7 +25,7 @@ def run_cli(argv: Sequence[str] | None = None) -> int:
 
     orchestrator = Orchestrator(vault_path)
 
-    result = execute_command(orchestrator, args)
+    result = execute_command(orchestrator, args, settings)
 
     if args.json:
         print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
@@ -98,13 +101,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Allow overwriting an existing note.",
     )
 
+    propose_parser = subparsers.add_parser(
+        "propose",
+        help="Use the configured LLM to propose a structured command without executing it.",
+    )
+    propose_parser.add_argument("request")
+
     return parser
 
 
 def execute_command(
     orchestrator: Orchestrator,
     args: argparse.Namespace,
-) -> OrchestratorResult:
+    settings: AppSettings,
+) -> OrchestratorResult | CommandProposalResult:
     if args.command == "read-note":
         return orchestrator.execute(
             domain="vault",
@@ -140,12 +150,31 @@ def execute_command(
             overwrite=args.overwrite,
         )
 
+    if args.command == "propose":
+        llm_provider = build_llm_provider(settings)
+        proposer = CommandProposer(llm_provider)
+
+        return proposer.propose(args.request)
+
     return OrchestratorResult(
         success=False,
         message="Unsupported CLI command.",
         domain="cli",
         operation=args.command or "",
         error="UNSUPPORTED_CLI_COMMAND",
+    )
+
+
+def build_llm_provider(settings: AppSettings) -> OllamaProvider:
+    if settings.llm_provider != "ollama":
+        raise RuntimeError(
+            f"Unsupported LLM provider: {settings.llm_provider}"
+        )
+
+    return OllamaProvider(
+        model=settings.ollama_model,
+        base_url=settings.ollama_base_url,
+        timeout_seconds=settings.ollama_timeout_seconds,
     )
 
 
@@ -165,7 +194,23 @@ def resolve_content(
     return ""
 
 
-def print_human_result(result: OrchestratorResult) -> None:
+def print_human_result(result: OrchestratorResult | CommandProposalResult) -> None:
+    if isinstance(result, CommandProposalResult):
+        print(f"success: {result.success}")
+        print(f"message: {result.message}")
+
+        if result.error:
+            print(f"error: {result.error}")
+
+        if result.proposal is not None:
+            print(f"domain: {result.proposal.domain}")
+            print(f"operation: {result.proposal.operation}")
+            print(f"arguments: {result.proposal.arguments}")
+            print(f"requires_confirmation: {result.proposal.requires_confirmation}")
+            print(f"explanation: {result.proposal.explanation}")
+
+        return
+
     print(f"success: {result.success}")
     print(f"message: {result.message}")
 

@@ -185,3 +185,40 @@ def test_cli_without_command_returns_error(capsys):
 
     assert exit_code == 1
     assert "Structured CLI for the Local Assistant." in captured.out
+
+
+def test_cli_propose_command(monkeypatch, capsys):
+    from local_assistant.llm.base_provider import BaseLLMProvider
+
+    class FakeLLMProvider(BaseLLMProvider):
+        def generate(self, prompt: str) -> str:
+            return """
+            {
+              "domain": "vault",
+              "operation": "search_notes",
+              "arguments": {
+                "query": "Salesforce"
+              },
+              "requires_confirmation": false,
+              "explanation": "Search notes for Salesforce."
+            }
+            """
+
+    def fake_build_llm_provider(settings):
+        return FakeLLMProvider()
+
+    monkeypatch.setattr(
+        "local_assistant.cli.build_llm_provider",
+        fake_build_llm_provider,
+    )
+
+    from local_assistant.cli import run_cli
+
+    exit_code = run_cli(["propose", "cerca Salesforce"])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "success: True" in captured.out
+    assert "operation: search_notes" in captured.out
+    assert "Salesforce" in captured.out
