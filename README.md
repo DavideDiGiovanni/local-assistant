@@ -193,6 +193,66 @@ local-assistant \
   read-note welcome.md
 ```
 
+## LLM-assisted command proposal
+
+The assistant can use the configured LLM to translate a natural language request into a structured command proposal.
+
+This does not execute anything.
+
+Example:
+
+```bash
+local-assistant propose "cerca Salesforce nel vault"
+```
+
+For machine-readable output:
+
+```bash
+local-assistant --json propose "cerca Salesforce nel vault"
+```
+
+Example flow:
+
+```bash
+local-assistant --json propose "cerca Salesforce nel vault" > /tmp/proposal.json
+
+local-assistant \
+  --vault-path examples/sample_vault \
+  execute-proposal /tmp/proposal.json
+```
+
+For write operations, confirmation is required:
+
+```bash
+local-assistant --json propose \
+  "crea la nota idee/test.md con contenuto # Test" \
+  > /tmp/proposal-write.json
+
+local-assistant \
+  --vault-path examples/sample_vault \
+  execute-proposal /tmp/proposal-write.json
+```
+
+The command above will fail with:
+
+```text
+CONFIRMATION_REQUIRED
+```
+
+To execute a write proposal explicitly:
+
+```bash
+local-assistant \
+  --vault-path examples/sample_vault \
+  execute-proposal /tmp/proposal-write.json \
+  --confirm
+```
+
+The LLM proposes.
+The system validates.
+The user confirms side effects.
+The tools execute and verify.
+
 ## Repository scope
 
 This repository contains:

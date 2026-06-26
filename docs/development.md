@@ -311,3 +311,76 @@ Until this is implemented, avoid:
 - multimodal processing;
 - orchestration frameworks;
 - multi-agent collaboration.
+
+
+## LLM-assisted proposal flow
+
+The current controlled natural-language flow is:
+
+```text
+Natural language request
+  ↓
+LLM
+  ↓
+CommandProposal
+  ↓
+local validation
+  ↓
+printed proposal
+```
+
+Execution is separate:
+
+```text
+CommandProposal JSON
+  ↓
+ExecuteCommandProposal
+  ↓
+validation
+  ↓
+confirmation gate for writes
+  ↓
+Orchestrator
+  ↓
+VaultAgent
+  ↓
+Vault tools
+```
+
+The LLM must not execute tools directly.
+
+The LLM must not bypass validation.
+
+The LLM must not decide whether a write operation can skip confirmation.
+
+Write operations always require explicit confirmation at execution time.
+
+### Example
+
+```bash
+local-assistant --json propose "cerca Salesforce nel vault" > /tmp/proposal.json
+
+local-assistant execute-proposal /tmp/proposal.json
+```
+
+For writes:
+
+```bash
+local-assistant --json propose \
+  "crea la nota idee/test.md con contenuto # Test" \
+  > /tmp/proposal-write.json
+
+local-assistant execute-proposal /tmp/proposal-write.json --confirm
+```
+
+### Development rule
+
+Any future natural-language feature must preserve this boundary:
+
+```text
+LLM proposes.
+System validates.
+Human confirms side effects.
+Tools execute.
+Tools verify.
+```
