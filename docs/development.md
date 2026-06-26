@@ -26,6 +26,91 @@ Respond
 
 The assistant must not claim that an operation happened unless the operation was executed by a tool and verified.
 
+## Current architecture
+
+Current execution flow:
+
+```text
+local-assistant
+  ↓
+CLI
+  ↓
+Orchestrator
+  ↓
+VaultAgent
+  ↓
+Vault tools
+  ↓
+Markdown files
+```
+
+Current Vault tools:
+
+- `read_note`
+- `search_notes`
+- `append_note`
+- `write_note`
+
+## Local setup
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install the project in editable mode:
+
+```bash
+python -m pip install -e .
+```
+
+Editable mode allows the `local-assistant` command to use the current repository code directly.
+
+## Running the CLI
+
+Show help:
+
+```bash
+local-assistant --help
+```
+
+Use the sample Vault:
+
+```bash
+local-assistant \
+  --vault-path examples/sample_vault \
+  search-notes Vault
+```
+
+Use a real Vault:
+
+```bash
+LOCAL_ASSISTANT_VAULT_PATH=/path/to/your/vault \
+local-assistant search-notes "Salesforce"
+```
+
+## Running tests
+
+Run the full test suite:
+
+```bash
+python -m pytest
+```
+
+Run a specific test file:
+
+```bash
+python -m pytest tests/unit/test_cli.py
+```
+
+Run a specific test:
+
+```bash
+python -m pytest tests/unit/test_cli.py::test_cli_read_note
+```
+
 ## Branching
 
 Use `main` for stable code.
@@ -38,10 +123,10 @@ Suggested flow:
 
 ```bash
 git switch develop
-git switch -c feature/vault-read-note
+git switch -c feature/my-change
 ```
 
-Merge feature branches back into `develop`.
+Merge feature branches back into `develop` only after tests pass.
 
 Merge `develop` into `main` only when the milestone is stable.
 
@@ -56,8 +141,9 @@ Examples:
 ```text
 Add baseline architecture documentation
 Add Ollama provider interface
-Add read_note tool
-Add tests for missing note handling
+Add read note tool
+Add structured CLI
+Add installable CLI entry point
 ```
 
 Avoid commits that mix unrelated work.
@@ -92,12 +178,14 @@ No personal paths should be hardcoded.
 Invalid example:
 
 ```text
-/home/dave/Documents/Vault
+/home/user/Documents/Vault
 ```
 
 Valid approach:
 
+```text
 Read the Vault path from configuration.
+```
 
 Configuration containing personal paths should not be committed.
 
@@ -135,7 +223,7 @@ Do not commit:
 
 ## Testing strategy
 
-Tests should be introduced from the first real tool.
+Tests should exist for each real operation.
 
 Minimum expected tests for tools:
 
@@ -145,7 +233,12 @@ Minimum expected tests for tools:
 - permission or write failure where applicable;
 - verification failure where applicable.
 
-The first integration tests should use a sample Vault under `examples/`.
+The integration surface currently covered by tests includes:
+
+- Vault tools;
+- VaultAgent;
+- Orchestrator;
+- structured CLI.
 
 ## Prompt development
 
@@ -186,16 +279,35 @@ When adding a dependency, document:
 
 ## Current development constraint
 
-Until the first milestone is complete, do not focus on:
+The system now has a working structured CLI.
 
-- large models;
-- prompt optimization;
-- context compression;
-- embeddings;
-- vector databases;
+The next step may introduce LLM-assisted parsing, but it must remain controlled.
+
+The LLM should not execute tools directly.
+
+A safe future flow is:
+
+```text
+Natural language request
+  ↓
+LLM proposes structured command
+  ↓
+System validates command
+  ↓
+Human reviews or command is safely executable
+  ↓
+Orchestrator executes
+  ↓
+Tool verifies result
+```
+
+Until this is implemented, avoid:
+
+- free-form autonomous agents;
+- background execution;
+- unreviewed write operations;
 - advanced RAG;
+- vector databases;
 - multimodal processing;
 - orchestration frameworks;
 - multi-agent collaboration.
-
-The immediate goal is a working and verifiable Vault Agent.
