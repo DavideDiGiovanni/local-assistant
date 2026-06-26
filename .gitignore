@@ -1,0 +1,82 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Test / lint / type-check cache
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local runtime data
+var/cache/*
+!var/cache/.gitkeep
+
+var/logs/*
+!var/logs/.gitkeep
+
+var/state/*
+!var/state/.gitkeep
+
+var/db/*
+!var/db/.gitkeep
+
+# Logs
+*.log
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated indexes / embeddings
+embeddings/
+indexes/
+vectorstore/
+chroma/
+faiss/
+qdrant/
+lancedb/
+
+# Local models
+*.gguf
+*.bin
+*.safetensors
+
+# Personal data - must stay outside the repository
+vault/
+workspace/
+private/
+data/private/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+EOF

@@ -1,0 +1,10 @@
+[project]
+name = "local-assistant"
+version = "0.1.0"
+description = "Local personal cognitive assistant"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
