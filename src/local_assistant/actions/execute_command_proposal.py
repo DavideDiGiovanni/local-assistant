@@ -1,10 +1,13 @@
 import json
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any
 
 from local_assistant.models.command_proposal import CommandProposal
 from local_assistant.models.orchestrator_result import OrchestratorResult
 from local_assistant.orchestrator.orchestrator import Orchestrator
+from local_assistant.validation.command_proposal_validator import (
+    CommandProposalValidator,
+)
 
 
 class ExecuteCommandProposal:
@@ -18,39 +21,20 @@ class ExecuteCommandProposal:
     to the orchestrator.
     """
 
-    ALLOWED_OPERATIONS: dict[str, dict[str, set[str]]] = {
-        "read_note": {
-            "required": {"relative_path"},
-            "optional": set(),
-        },
-        "search_notes": {
-            "required": {"query"},
-            "optional": set(),
-        },
-        "append_note": {
-            "required": {"relative_path", "content"},
-            "optional": set(),
-        },
-        "write_note": {
-            "required": {"relative_path", "content"},
-            "optional": {"overwrite"},
-        },
-    }
-
-    WRITE_OPERATIONS = {
-        "append_note",
-        "write_note",
-    }
-
-    def __init__(self, orchestrator: Orchestrator) -> None:
+    def __init__(
+        self,
+        orchestrator: Orchestrator,
+        validator: CommandProposalValidator | None = None,
+    ) -> None:
         self.orchestrator = orchestrator
+        self.validator = validator or CommandProposalValidator()
 
     def execute(
         self,
         proposal: CommandProposal,
         confirm: bool = False,
     ) -> OrchestratorResult:
-        validation_error = self._validate_proposal(proposal)
+        validation_error = self.validator.validate(proposal)
 
         if validation_error is not None:
             return OrchestratorResult(
@@ -64,7 +48,7 @@ class ExecuteCommandProposal:
                 },
             )
 
-        if proposal.operation in self.WRITE_OPERATIONS and not confirm:
+        if self.validator.requires_confirmation(proposal) and not confirm:
             return OrchestratorResult(
                 success=False,
                 message="Confirmation is required before executing this proposal.",
@@ -116,6 +100,18 @@ class ExecuteCommandProposal:
                 data={
                     "path": str(path),
                     "details": str(exc),
+                },
+            )
+
+        if not isinstance(payload, dict):
+            return OrchestratorResult(
+                success=False,
+                message="Proposal file JSON must be an object.",
+                domain="proposal",
+                operation="execute_proposal",
+                error="INVALID_PROPOSAL_JSON",
+                data={
+                    "path": str(path),
                 },
             )
 
@@ -171,59 +167,3 @@ class ExecuteCommandProposal:
             explanation=str(explanation).strip(),
             requires_confirmation=requires_confirmation,
         )
-
-    def _validate_proposal(self, proposal: CommandProposal) -> str | None:
-        if proposal.domain != "vault":
-            return "UNSUPPORTED_DOMAIN"
-
-        if proposal.operation not in self.ALLOWED_OPERATIONS:
-            return "UNSUPPORTED_OPERATION"
-
-        operation_spec = self.ALLOWED_OPERATIONS[proposal.operation]
-        required_args = operation_spec["required"]
-        optional_args = operation_spec["optional"]
-        allowed_args = required_args | optional_args
-
-        received_args = set(proposal.arguments.keys())
-
-        missing_args = required_args - received_args
-        if missing_args:
-            return "MISSING_REQUIRED_ARGUMENT"
-
-        unknown_args = received_args - allowed_args
-        if unknown_args:
-            return "UNKNOWN_ARGUMENT"
-
-        for arg_name in required_args:
-            value = proposal.arguments.get(arg_name)
-
-            if not isinstance(value, str):
-                return "INVALID_ARGUMENT_TYPE"
-
-            if not value.strip():
-                return "EMPTY_ARGUMENT"
-
-        if "relative_path" in proposal.arguments:
-            relative_path = proposal.arguments["relative_path"]
-
-            if not self._is_safe_relative_path(relative_path):
-                return "UNSAFE_RELATIVE_PATH"
-
-        if "overwrite" in proposal.arguments:
-            overwrite = proposal.arguments["overwrite"]
-
-            if not isinstance(overwrite, bool):
-                return "INVALID_OVERWRITE_ARGUMENT"
-
-        return None
-
-    def _is_safe_relative_path(self, relative_path: str) -> bool:
-        path = PurePosixPath(relative_path)
-
-        if path.is_absolute():
-            return False
-
-        if ".." in path.parts:
-            return False
-
-        return True

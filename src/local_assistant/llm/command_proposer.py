@@ -1,12 +1,13 @@
 import json
-from dataclasses import replace
-from pathlib import PurePosixPath
 from typing import Any
 
 from local_assistant.llm.base_provider import BaseLLMProvider
 from local_assistant.models.command_proposal import (
     CommandProposal,
     CommandProposalResult,
+)
+from local_assistant.validation.command_proposal_validator import (
+    CommandProposalValidator,
 )
 
 
@@ -19,32 +20,13 @@ class CommandProposer:
     It only proposes a JSON command that is then validated locally.
     """
 
-    ALLOWED_OPERATIONS: dict[str, dict[str, set[str]]] = {
-        "read_note": {
-            "required": {"relative_path"},
-            "optional": set(),
-        },
-        "search_notes": {
-            "required": {"query"},
-            "optional": set(),
-        },
-        "append_note": {
-            "required": {"relative_path", "content"},
-            "optional": set(),
-        },
-        "write_note": {
-            "required": {"relative_path", "content"},
-            "optional": {"overwrite"},
-        },
-    }
-
-    WRITE_OPERATIONS = {
-        "append_note",
-        "write_note",
-    }
-
-    def __init__(self, llm_provider: BaseLLMProvider) -> None:
+    def __init__(
+        self,
+        llm_provider: BaseLLMProvider,
+        validator: CommandProposalValidator | None = None,
+    ) -> None:
         self.llm_provider = llm_provider
+        self.validator = validator or CommandProposalValidator()
 
     def propose(self, request: str) -> CommandProposalResult:
         normalized_request = request.strip()
@@ -76,7 +58,7 @@ class CommandProposer:
 
         proposal = self._proposal_from_payload(payload)
 
-        validation_error = self._validate_proposal(proposal)
+        validation_error = self.validator.validate(proposal)
 
         if validation_error is not None:
             return CommandProposalResult(
@@ -88,7 +70,7 @@ class CommandProposer:
                 raw_response=raw_response,
             )
 
-        proposal = self._normalize_confirmation(proposal)
+        proposal = self.validator.normalize_confirmation(proposal)
 
         return CommandProposalResult(
             success=True,
@@ -202,68 +184,3 @@ User request:
             explanation=str(explanation).strip(),
             requires_confirmation=requires_confirmation,
         )
-
-    def _validate_proposal(self, proposal: CommandProposal) -> str | None:
-        if proposal.domain != "vault":
-            return "UNSUPPORTED_DOMAIN"
-
-        if proposal.operation not in self.ALLOWED_OPERATIONS:
-            return "UNSUPPORTED_OPERATION"
-
-        operation_spec = self.ALLOWED_OPERATIONS[proposal.operation]
-        required_args = operation_spec["required"]
-        optional_args = operation_spec["optional"]
-        allowed_args = required_args | optional_args
-
-        received_args = set(proposal.arguments.keys())
-
-        missing_args = required_args - received_args
-        if missing_args:
-            return "MISSING_REQUIRED_ARGUMENT"
-
-        unknown_args = received_args - allowed_args
-        if unknown_args:
-            return "UNKNOWN_ARGUMENT"
-
-        for arg_name in required_args:
-            value = proposal.arguments.get(arg_name)
-
-            if not isinstance(value, str):
-                return "INVALID_ARGUMENT_TYPE"
-
-            if not value.strip():
-                return "EMPTY_ARGUMENT"
-
-        if "relative_path" in proposal.arguments:
-            relative_path = proposal.arguments["relative_path"]
-
-            if not self._is_safe_relative_path(relative_path):
-                return "UNSAFE_RELATIVE_PATH"
-
-        if "overwrite" in proposal.arguments:
-            overwrite = proposal.arguments["overwrite"]
-
-            if not isinstance(overwrite, bool):
-                return "INVALID_OVERWRITE_ARGUMENT"
-
-        return None
-
-    def _normalize_confirmation(
-        self,
-        proposal: CommandProposal,
-    ) -> CommandProposal:
-        if proposal.operation in self.WRITE_OPERATIONS:
-            return replace(proposal, requires_confirmation=True)
-
-        return proposal
-
-    def _is_safe_relative_path(self, relative_path: str) -> bool:
-        path = PurePosixPath(relative_path)
-
-        if path.is_absolute():
-            return False
-
-        if ".." in path.parts:
-            return False
-
-        return True
