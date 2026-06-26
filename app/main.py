@@ -1,9 +1,4 @@
-from local_assistant.cli import run_cli
-
-
-def main() -> None:
-    raise SystemExit(run_cli())
-
+from local_assistant.cli import main
 
 if __name__ == "__main__":
     main()

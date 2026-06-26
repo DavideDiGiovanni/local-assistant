@@ -196,3 +196,7 @@ def print_human_result(result: OrchestratorResult) -> None:
 
     if "overwritten" in result.data:
         print(f"overwritten: {result.data['overwritten']}")
+
+
+def main() -> None:
+    raise SystemExit(run_cli())
