@@ -70,7 +70,7 @@ lancedb/
 *.safetensors
 
 # Personal data - must stay outside the repository
-vault/
+/vault/
 workspace/
 private/
 data/private/
