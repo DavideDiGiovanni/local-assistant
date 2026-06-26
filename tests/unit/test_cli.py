@@ -336,3 +336,136 @@ def test_cli_execute_proposal_write_with_confirmation(tmp_path):
 
     assert exit_code == 0
     assert (tmp_path / "note.md").read_text(encoding="utf-8") == "# Test"
+
+
+def test_cli_ask_executes_search_notes(monkeypatch, tmp_path, capsys):
+    from local_assistant.llm.base_provider import BaseLLMProvider
+
+    class FakeLLMProvider(BaseLLMProvider):
+        def generate(self, prompt: str) -> str:
+            return """
+            {
+              "domain": "vault",
+              "operation": "search_notes",
+              "arguments": {
+                "query": "Salesforce"
+              },
+              "requires_confirmation": false,
+              "explanation": "Search notes for Salesforce."
+            }
+            """
+
+    def fake_build_llm_provider(settings):
+        return FakeLLMProvider()
+
+    monkeypatch.setattr(
+        "local_assistant.cli.build_llm_provider",
+        fake_build_llm_provider,
+    )
+
+    note = tmp_path / "note.md"
+    note.write_text("Salesforce project note.", encoding="utf-8")
+
+    from local_assistant.cli import run_cli
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "ask",
+            "cerca Salesforce",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "success: True" in captured.out
+    assert "operation: search_notes" in captured.out
+    assert "matches: 1" in captured.out
+
+
+def test_cli_ask_write_requires_confirmation(monkeypatch, tmp_path, capsys):
+    from local_assistant.llm.base_provider import BaseLLMProvider
+
+    class FakeLLMProvider(BaseLLMProvider):
+        def generate(self, prompt: str) -> str:
+            return """
+            {
+              "domain": "vault",
+              "operation": "write_note",
+              "arguments": {
+                "relative_path": "note.md",
+                "content": "# Test"
+              },
+              "requires_confirmation": false,
+              "explanation": "Write note."
+            }
+            """
+
+    def fake_build_llm_provider(settings):
+        return FakeLLMProvider()
+
+    monkeypatch.setattr(
+        "local_assistant.cli.build_llm_provider",
+        fake_build_llm_provider,
+    )
+
+    from local_assistant.cli import run_cli
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "ask",
+            "crea note.md",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "CONFIRMATION_REQUIRED" in captured.out
+    assert not (tmp_path / "note.md").exists()
+
+
+def test_cli_ask_write_with_confirmation(monkeypatch, tmp_path):
+    from local_assistant.llm.base_provider import BaseLLMProvider
+
+    class FakeLLMProvider(BaseLLMProvider):
+        def generate(self, prompt: str) -> str:
+            return """
+            {
+              "domain": "vault",
+              "operation": "write_note",
+              "arguments": {
+                "relative_path": "note.md",
+                "content": "# Test"
+              },
+              "requires_confirmation": false,
+              "explanation": "Write note."
+            }
+            """
+
+    def fake_build_llm_provider(settings):
+        return FakeLLMProvider()
+
+    monkeypatch.setattr(
+        "local_assistant.cli.build_llm_provider",
+        fake_build_llm_provider,
+    )
+
+    from local_assistant.cli import run_cli
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "ask",
+            "crea note.md",
+            "--confirm",
+        ]
+    )
+
+    assert exit_code == 0
+    assert (tmp_path / "note.md").read_text(encoding="utf-8") == "# Test"

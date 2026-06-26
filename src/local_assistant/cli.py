@@ -4,10 +4,12 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Sequence
 
+from local_assistant.actions.controlled_ask import ControlledAsk
 from local_assistant.actions.execute_command_proposal import ExecuteCommandProposal
 from local_assistant.config.settings import AppSettings, load_settings
 from local_assistant.llm.command_proposer import CommandProposer
 from local_assistant.llm.ollama_provider import OllamaProvider
+from local_assistant.models.ask_result import AskResult
 from local_assistant.models.command_proposal import CommandProposalResult
 from local_assistant.models.orchestrator_result import OrchestratorResult
 from local_assistant.orchestrator.orchestrator import Orchestrator
@@ -119,6 +121,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Confirm execution of proposals that modify the Vault.",
     )
 
+    ask_parser = subparsers.add_parser(
+        "ask",
+        help="Use the configured LLM to propose and safely execute a supported command.",
+    )
+    ask_parser.add_argument("request")
+    ask_parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Allow execution of proposals that modify the Vault.",
+    )
+
     return parser
 
 
@@ -126,7 +139,7 @@ def execute_command(
     orchestrator: Orchestrator,
     args: argparse.Namespace,
     settings: AppSettings,
-) -> OrchestratorResult | CommandProposalResult:
+) -> OrchestratorResult | CommandProposalResult | AskResult:
     if args.command == "read-note":
         return orchestrator.execute(
             domain="vault",
@@ -176,6 +189,19 @@ def execute_command(
             confirm=args.confirm,
         )
 
+    if args.command == "ask":
+        llm_provider = build_llm_provider(settings)
+
+        ask_action = ControlledAsk(
+            llm_provider=llm_provider,
+            orchestrator=orchestrator,
+        )
+
+        return ask_action.run(
+            request=args.request,
+            confirm=args.confirm,
+        )
+
     return OrchestratorResult(
         success=False,
         message="Unsupported CLI command.",
@@ -214,7 +240,28 @@ def resolve_content(
     return ""
 
 
-def print_human_result(result: OrchestratorResult | CommandProposalResult) -> None:
+def print_human_result(result: OrchestratorResult | CommandProposalResult | AskResult) -> None:
+    if isinstance(result, AskResult):
+        print(f"success: {result.success}")
+        print(f"message: {result.message}")
+
+        if result.error:
+            print(f"error: {result.error}")
+
+        if result.proposal is not None:
+            print("--- proposal ---")
+            print(f"domain: {result.proposal.domain}")
+            print(f"operation: {result.proposal.operation}")
+            print(f"arguments: {result.proposal.arguments}")
+            print(f"requires_confirmation: {result.proposal.requires_confirmation}")
+            print(f"explanation: {result.proposal.explanation}")
+
+        if result.execution_result is not None:
+            print("--- execution ---")
+            print_human_result(result.execution_result)
+
+        return
+
     if isinstance(result, CommandProposalResult):
         print(f"success: {result.success}")
         print(f"message: {result.message}")
