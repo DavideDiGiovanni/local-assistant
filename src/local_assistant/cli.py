@@ -163,6 +163,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Relative path of the folder to create.",
     )
 
+    delete_folder_parser = subparsers.add_parser(
+        "delete-folder",
+        help="Delete an empty folder inside the Vault.",
+    )
+    delete_folder_parser.add_argument(
+        "relative_path",
+        help="Relative path of the folder to delete.",
+    )
+
     return parser
 
 
@@ -250,6 +259,13 @@ def execute_command(
         return orchestrator.execute(
             domain="vault",
             operation="create_folder",
+            relative_path=args.relative_path,
+        )
+
+    if args.command == "delete-folder":
+        return orchestrator.execute(
+            domain="vault",
+            operation="delete_folder",
             relative_path=args.relative_path,
         )
 

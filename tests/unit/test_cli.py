@@ -594,3 +594,44 @@ def test_cli_create_folder_already_exists(tmp_path, capsys):
     assert exit_code == 1
     assert "success: False" in captured.out
     assert "FOLDER_ALREADY_EXISTS" in captured.out
+
+
+def test_cli_delete_folder(tmp_path, capsys):
+    (tmp_path / "projects").mkdir()
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "delete-folder",
+            "projects",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "success: True" in captured.out
+    assert not (tmp_path / "projects").exists()
+
+
+def test_cli_delete_folder_non_empty(tmp_path, capsys):
+    (tmp_path / "projects").mkdir()
+    (tmp_path / "projects" / "note.md").write_text("# Note", encoding="utf-8")
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "delete-folder",
+            "projects",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "success: False" in captured.out
+    assert "FOLDER_NOT_EMPTY" in captured.out
+    assert (tmp_path / "projects").is_dir()
+    assert (tmp_path / "projects" / "note.md").exists()

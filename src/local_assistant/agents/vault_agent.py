@@ -4,6 +4,7 @@ from typing import Any
 from local_assistant.models.agent_result import AgentResult
 from local_assistant.tools.vault.append_note import AppendNote
 from local_assistant.tools.vault.create_folder import CreateFolder
+from local_assistant.tools.vault.delete_folder import DeleteFolder
 from local_assistant.tools.vault.list_folders import ListFolders
 from local_assistant.tools.vault.read_note import ReadNote
 from local_assistant.tools.vault.search_notes import SearchNotes
@@ -29,6 +30,7 @@ class VaultAgent:
         "write_note",
         "list_folders",
         "create_folder",
+        "delete_folder",
     }
 
     def __init__(self, vault_path: str | Path) -> None:
@@ -40,6 +42,7 @@ class VaultAgent:
         self._write_note = WriteNote(self.vault_path)
         self._list_folders = ListFolders(self.vault_path)
         self._create_folder = CreateFolder(self.vault_path)
+        self._delete_folder = DeleteFolder(self.vault_path)
 
     def execute(self, operation: str, **kwargs: Any) -> AgentResult:
         """
@@ -53,6 +56,7 @@ class VaultAgent:
         - write_note(relative_path, content, overwrite=False)
         - list_folders(relative_path=".")
         - create_folder(relative_path)
+        - delete_folder(relative_path)
         """
 
         if operation not in self.SUPPORTED_OPERATIONS:
@@ -97,6 +101,11 @@ class VaultAgent:
 
             if operation == "create_folder":
                 return self.create_folder(
+                    relative_path=kwargs["relative_path"],
+                )
+
+            if operation == "delete_folder":
+                return self.delete_folder(
                     relative_path=kwargs["relative_path"],
                 )
 
@@ -166,5 +175,12 @@ class VaultAgent:
         tool_result = self._create_folder.run(relative_path=relative_path)
         return AgentResult.from_tool_result(
             operation="create_folder",
+            tool_result=tool_result,
+        )
+
+    def delete_folder(self, relative_path: str) -> AgentResult:
+        tool_result = self._delete_folder.run(relative_path=relative_path)
+        return AgentResult.from_tool_result(
+            operation="delete_folder",
             tool_result=tool_result,
         )

@@ -325,3 +325,75 @@ def test_validator_rejects_create_folder_without_relative_path():
     )
 
     assert validator.validate(proposal) == "MISSING_REQUIRED_ARGUMENT"
+
+
+def test_validator_accepts_delete_folder():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="delete_folder",
+        arguments={"relative_path": "projects"},
+        explanation="Delete folder.",
+        requires_confirmation=True,
+    )
+
+    assert validator.validate(proposal) is None
+
+
+def test_validator_requires_confirmation_for_delete_folder():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="delete_folder",
+        arguments={"relative_path": "projects"},
+        explanation="Delete folder.",
+        requires_confirmation=False,
+    )
+
+    assert validator.requires_confirmation(proposal) is True
+
+
+def test_validator_normalizes_delete_folder_confirmation():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="delete_folder",
+        arguments={"relative_path": "projects"},
+        explanation="Delete folder.",
+        requires_confirmation=False,
+    )
+
+    normalized = validator.normalize_confirmation(proposal)
+
+    assert normalized.requires_confirmation is True
+
+
+def test_validator_rejects_delete_folder_without_relative_path():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="delete_folder",
+        arguments={},
+        explanation="Delete folder.",
+        requires_confirmation=True,
+    )
+
+    assert validator.validate(proposal) == "MISSING_REQUIRED_ARGUMENT"
+
+
+def test_validator_rejects_delete_folder_unknown_argument():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="delete_folder",
+        arguments={"relative_path": "projects", "recursive": True},
+        explanation="Delete folder.",
+        requires_confirmation=True,
+    )
+
+    assert validator.validate(proposal) == "UNKNOWN_ARGUMENT"

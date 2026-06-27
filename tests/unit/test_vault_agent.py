@@ -183,3 +183,25 @@ def test_vault_agent_create_folder_reports_missing_argument(tmp_path):
     assert result.operation == "create_folder"
     assert result.error == "MISSING_ARGUMENT"
     assert result.data["missing_argument"] == "relative_path"
+
+
+def test_vault_agent_deletes_folder(tmp_path):
+    (tmp_path / "projects").mkdir()
+    agent = VaultAgent(tmp_path)
+
+    result = agent.execute("delete_folder", relative_path="projects")
+
+    assert result.success is True
+    assert result.operation == "delete_folder"
+    assert not (tmp_path / "projects").exists()
+
+
+def test_vault_agent_delete_folder_reports_missing_argument(tmp_path):
+    agent = VaultAgent(tmp_path)
+
+    result = agent.execute("delete_folder")
+
+    assert result.success is False
+    assert result.operation == "delete_folder"
+    assert result.error == "MISSING_ARGUMENT"
+    assert result.data["missing_argument"] == "relative_path"

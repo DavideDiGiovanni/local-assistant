@@ -217,3 +217,66 @@ def test_controlled_ask_returns_proposal_error(tmp_path):
     assert result.success is False
     assert result.error == "INVALID_JSON"
     assert result.execution_result is None
+
+
+def test_controlled_ask_requires_confirmation_for_delete_folder(tmp_path):
+    (tmp_path / "projects").mkdir()
+
+    llm = FakeLLMProvider(
+        """
+        {
+          "domain": "vault",
+          "operation": "delete_folder",
+          "arguments": {
+            "relative_path": "projects"
+          },
+          "requires_confirmation": false,
+          "explanation": "Delete projects folder."
+        }
+        """
+    )
+
+    action = ControlledAsk(
+        llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
+        orchestrator=Orchestrator(tmp_path),
+    )
+
+    result = action.run("elimina cartella projects")
+
+    assert result.success is False
+    assert result.error == "CONFIRMATION_REQUIRED"
+    assert result.proposal is not None
+    assert result.proposal.requires_confirmation is True
+    assert result.execution_result is None
+    assert (tmp_path / "projects").is_dir()
+
+
+def test_controlled_ask_deletes_folder_when_confirmed(tmp_path):
+    (tmp_path / "projects").mkdir()
+
+    llm = FakeLLMProvider(
+        """
+        {
+          "domain": "vault",
+          "operation": "delete_folder",
+          "arguments": {
+            "relative_path": "projects"
+          },
+          "requires_confirmation": false,
+          "explanation": "Delete projects folder."
+        }
+        """
+    )
+
+    action = ControlledAsk(
+        llm_provider=llm,
+        prompt_template=PROMPT_TEMPLATE,
+        orchestrator=Orchestrator(tmp_path),
+    )
+
+    result = action.run("elimina cartella projects", confirm=True)
+
+    assert result.success is True
+    assert result.execution_result is not None
+    assert not (tmp_path / "projects").exists()

@@ -35,6 +35,11 @@ Required arguments:
 - relative_path
 Requires confirmation: true
 
+7. delete_folder
+Required arguments:
+- relative_path
+Requires confirmation: true
+
 Rules:
 - Return JSON only.
 - Do not use Markdown.
@@ -46,6 +51,8 @@ Rules:
 - Never use paths containing "..".
 - For write operations, set requires_confirmation to true.
 - For read_note, search_notes, and list_folders, requires_confirmation may be false.
+- Never propose delete_folder for the Vault root.
+- Use delete_folder only for folders, not notes or files.
 - If the request is unsupported, return domain "unsupported" and operation "unsupported".
 
 JSON schema:
