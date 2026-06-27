@@ -267,3 +267,61 @@ def test_validator_does_not_require_confirmation_for_list_folders():
     )
 
     assert validator.requires_confirmation(proposal) is False
+
+
+def test_validator_accepts_create_folder():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="create_folder",
+        arguments={"relative_path": "projects"},
+        explanation="Create folder.",
+        requires_confirmation=True,
+    )
+
+    assert validator.validate(proposal) is None
+
+
+def test_validator_requires_confirmation_for_create_folder():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="create_folder",
+        arguments={"relative_path": "projects"},
+        explanation="Create folder.",
+        requires_confirmation=False,
+    )
+
+    assert validator.requires_confirmation(proposal) is True
+
+
+def test_validator_normalizes_create_folder_confirmation():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="create_folder",
+        arguments={"relative_path": "projects"},
+        explanation="Create folder.",
+        requires_confirmation=False,
+    )
+
+    normalized = validator.normalize_confirmation(proposal)
+
+    assert normalized.requires_confirmation is True
+
+
+def test_validator_rejects_create_folder_without_relative_path():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="create_folder",
+        arguments={},
+        explanation="Create folder.",
+        requires_confirmation=True,
+    )
+
+    assert validator.validate(proposal) == "MISSING_REQUIRED_ARGUMENT"

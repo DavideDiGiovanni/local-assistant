@@ -154,6 +154,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Relative path inside the Vault. Defaults to Vault root.",
     )
 
+    create_folder_parser = subparsers.add_parser(
+        "create-folder",
+        help="Create a folder inside the Vault.",
+    )
+    create_folder_parser.add_argument(
+        "relative_path",
+        help="Relative path of the folder to create.",
+    )
+
     return parser
 
 
@@ -234,6 +243,13 @@ def execute_command(
         return orchestrator.execute(
             domain="vault",
             operation="list_folders",
+            relative_path=args.relative_path,
+        )
+
+    if args.command == "create-folder":
+        return orchestrator.execute(
+            domain="vault",
+            operation="create_folder",
             relative_path=args.relative_path,
         )
 

@@ -35,11 +35,16 @@ class CommandProposalValidator:
             "required": set(),
             "optional": {"relative_path"},
         },
+        "create_folder": {
+            "required": {"relative_path"},
+            "optional": set(),
+        },
     }
 
     WRITE_OPERATIONS = {
         "append_note",
         "write_note",
+        "create_folder",
     }
 
     def validate(self, proposal: CommandProposal) -> str | None:

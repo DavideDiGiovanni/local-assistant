@@ -30,6 +30,11 @@ Optional arguments:
 Optional arguments:
 - relative_path
 
+6. create_folder
+Required arguments:
+- relative_path
+Requires confirmation: true
+
 Rules:
 - Return JSON only.
 - Do not use Markdown.

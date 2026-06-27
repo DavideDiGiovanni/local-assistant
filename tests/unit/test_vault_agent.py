@@ -162,3 +162,24 @@ def test_vault_agent_list_folders_with_relative_path(tmp_path):
     assert result.data["folders"] == [
         {"name": "alpha", "relative_path": "projects/alpha"},
     ]
+
+
+def test_vault_agent_creates_folder(tmp_path):
+    agent = VaultAgent(tmp_path)
+
+    result = agent.execute("create_folder", relative_path="projects")
+
+    assert result.success is True
+    assert result.operation == "create_folder"
+    assert (tmp_path / "projects").is_dir()
+
+
+def test_vault_agent_create_folder_reports_missing_argument(tmp_path):
+    agent = VaultAgent(tmp_path)
+
+    result = agent.execute("create_folder")
+
+    assert result.success is False
+    assert result.operation == "create_folder"
+    assert result.error == "MISSING_ARGUMENT"
+    assert result.data["missing_argument"] == "relative_path"
