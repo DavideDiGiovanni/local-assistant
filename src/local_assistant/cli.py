@@ -143,6 +143,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Allow execution of proposals that modify the Vault.",
     )
 
+    list_folders_parser = subparsers.add_parser(
+        "list-folders",
+        help="List folders inside the Vault.",
+    )
+    list_folders_parser.add_argument(
+        "relative_path",
+        nargs="?",
+        default=".",
+        help="Relative path inside the Vault. Defaults to Vault root.",
+    )
+
     return parser
 
 
@@ -217,6 +228,13 @@ def execute_command(
         return ask_action.run(
             request=args.request,
             confirm=args.confirm,
+        )
+
+    if args.command == "list-folders":
+        return orchestrator.execute(
+            domain="vault",
+            operation="list_folders",
+            relative_path=args.relative_path,
         )
 
     return OrchestratorResult(
@@ -321,6 +339,14 @@ def print_human_result(
                 f"{match['relative_path']}:{match['line_number']}: "
                 f"{match['line']}"
             )
+
+        return
+
+    if result.operation == "list_folders" and result.success:
+        print(f"folders: {len(result.data['folders'])}")
+
+        for folder in result.data["folders"]:
+            print(folder["relative_path"])
 
         return
 

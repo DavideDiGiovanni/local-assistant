@@ -211,3 +211,59 @@ def test_validator_normalizes_confirmation_for_write_operations():
     normalized = validator.normalize_confirmation(proposal)
 
     assert normalized.requires_confirmation is True
+
+
+def test_validator_accepts_list_folders_without_arguments():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="list_folders",
+        arguments={},
+        explanation="List folders in the Vault root.",
+        requires_confirmation=False,
+    )
+
+    assert validator.validate(proposal) is None
+
+
+def test_validator_accepts_list_folders_with_relative_path():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="list_folders",
+        arguments={"relative_path": "projects"},
+        explanation="List folders in projects.",
+        requires_confirmation=False,
+    )
+
+    assert validator.validate(proposal) is None
+
+
+def test_validator_rejects_list_folders_unknown_argument():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="list_folders",
+        arguments={"unknown": "value"},
+        explanation="List folders.",
+        requires_confirmation=False,
+    )
+
+    assert validator.validate(proposal) == "UNKNOWN_ARGUMENT"
+
+
+def test_validator_does_not_require_confirmation_for_list_folders():
+    validator = CommandProposalValidator()
+
+    proposal = CommandProposal(
+        domain="vault",
+        operation="list_folders",
+        arguments={},
+        explanation="List folders.",
+        requires_confirmation=False,
+    )
+
+    assert validator.requires_confirmation(proposal) is False

@@ -31,6 +31,10 @@ class CommandProposalValidator:
             "required": {"relative_path", "content"},
             "optional": {"overwrite"},
         },
+        "list_folders": {
+            "required": set(),
+            "optional": {"relative_path"},
+        },
     }
 
     WRITE_OPERATIONS = {

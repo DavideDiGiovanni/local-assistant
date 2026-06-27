@@ -135,3 +135,30 @@ def test_vault_agent_overwrites_when_explicitly_allowed(tmp_path):
     assert result.success is True
     assert result.data["overwritten"] is True
     assert note.read_text(encoding="utf-8") == "New content"
+
+
+def test_vault_agent_list_folders(tmp_path):
+    (tmp_path / "projects").mkdir()
+    (tmp_path / "daily").mkdir()
+
+    agent = VaultAgent(tmp_path)
+
+    result = agent.execute("list_folders")
+
+    assert result.success is True
+    assert result.operation == "list_folders"
+    assert len(result.data["folders"]) == 2
+
+
+def test_vault_agent_list_folders_with_relative_path(tmp_path):
+    (tmp_path / "projects" / "alpha").mkdir(parents=True)
+
+    agent = VaultAgent(tmp_path)
+
+    result = agent.execute("list_folders", relative_path="projects")
+
+    assert result.success is True
+    assert result.operation == "list_folders"
+    assert result.data["folders"] == [
+        {"name": "alpha", "relative_path": "projects/alpha"},
+    ]

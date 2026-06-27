@@ -26,6 +26,10 @@ Required arguments:
 Optional arguments:
 - overwrite
 
+5. list_folders
+Optional arguments:
+- relative_path
+
 Rules:
 - Return JSON only.
 - Do not use Markdown.
@@ -36,7 +40,7 @@ Rules:
 - Never use absolute paths.
 - Never use paths containing "..".
 - For write operations, set requires_confirmation to true.
-- For read_note and search_notes, requires_confirmation may be false.
+- For read_note, search_notes, and list_folders, requires_confirmation may be false.
 - If the request is unsupported, return domain "unsupported" and operation "unsupported".
 
 JSON schema:

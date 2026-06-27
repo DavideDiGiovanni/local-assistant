@@ -3,6 +3,7 @@ from typing import Any
 
 from local_assistant.models.agent_result import AgentResult
 from local_assistant.tools.vault.append_note import AppendNote
+from local_assistant.tools.vault.list_folders import ListFolders
 from local_assistant.tools.vault.read_note import ReadNote
 from local_assistant.tools.vault.search_notes import SearchNotes
 from local_assistant.tools.vault.write_note import WriteNote
@@ -25,6 +26,7 @@ class VaultAgent:
         "search_notes",
         "append_note",
         "write_note",
+        "list_folders",
     }
 
     def __init__(self, vault_path: str | Path) -> None:
@@ -34,6 +36,7 @@ class VaultAgent:
         self._search_notes = SearchNotes(self.vault_path)
         self._append_note = AppendNote(self.vault_path)
         self._write_note = WriteNote(self.vault_path)
+        self._list_folders = ListFolders(self.vault_path)
 
     def execute(self, operation: str, **kwargs: Any) -> AgentResult:
         """
@@ -45,6 +48,7 @@ class VaultAgent:
         - search_notes(query)
         - append_note(relative_path, content)
         - write_note(relative_path, content, overwrite=False)
+        - list_folders(relative_path=".")
         """
 
         if operation not in self.SUPPORTED_OPERATIONS:
@@ -80,6 +84,11 @@ class VaultAgent:
                     relative_path=kwargs["relative_path"],
                     content=kwargs["content"],
                     overwrite=kwargs.get("overwrite", False),
+                )
+
+            if operation == "list_folders":
+                return self.list_folders(
+                    relative_path=kwargs.get("relative_path", "."),
                 )
 
         except KeyError as exc:
@@ -134,5 +143,12 @@ class VaultAgent:
         )
         return AgentResult.from_tool_result(
             operation="write_note",
+            tool_result=tool_result,
+        )
+
+    def list_folders(self, relative_path: str = ".") -> AgentResult:
+        tool_result = self._list_folders.run(relative_path=relative_path)
+        return AgentResult.from_tool_result(
+            operation="list_folders",
             tool_result=tool_result,
         )

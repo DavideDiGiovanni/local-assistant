@@ -497,3 +497,64 @@ def test_cli_ask_write_with_confirmation(monkeypatch, tmp_path):
 
     assert exit_code == 0
     assert (tmp_path / "note.md").read_text(encoding="utf-8") == "# Test"
+
+
+def test_cli_list_folders(tmp_path, capsys):
+    (tmp_path / "projects").mkdir()
+    (tmp_path / "daily").mkdir()
+    (tmp_path / "note.md").write_text("# Note", encoding="utf-8")
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "list-folders",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "success: True" in captured.out
+    assert "folders: 2" in captured.out
+    assert "projects" in captured.out
+    assert "daily" in captured.out
+
+
+def test_cli_list_folders_nested(tmp_path, capsys):
+    (tmp_path / "projects" / "alpha").mkdir(parents=True)
+    (tmp_path / "projects" / "beta").mkdir(parents=True)
+
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "list-folders",
+            "projects",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "success: True" in captured.out
+    assert "folders: 2" in captured.out
+    assert "projects/alpha" in captured.out
+    assert "projects/beta" in captured.out
+
+
+def test_cli_list_folders_missing(tmp_path, capsys):
+    exit_code = run_cli(
+        [
+            "--vault-path",
+            str(tmp_path),
+            "list-folders",
+            "nonexistent",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "success: False" in captured.out
+    assert "FOLDER_NOT_FOUND" in captured.out
