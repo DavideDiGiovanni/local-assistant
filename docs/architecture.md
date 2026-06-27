@@ -110,6 +110,24 @@ A tool must not pretend to execute.
 A tool either succeeds, fails or returns an explicit partial result.
 Every tool result must be inspectable.
 
+#### Vault folder operations
+
+The VaultAgent supports controlled folder operations inside the configured Vault path.
+
+Supported folder operations:
+
+- `list_folders`
+- `create_folder`
+- `delete_folder`
+
+These operations are scoped to the Vault domain and must not be treated as generic filesystem commands.
+
+`list_folders` is read-only.
+
+`create_folder` and `delete_folder` are write operations and require explicit confirmation when executed through the LLM proposal flow.
+
+`delete_folder` only deletes empty folders and refuses to delete the Vault root, files, symlinks, paths outside the Vault, or non-empty folders.
+
 #### Tool rule
 
 The assistant must never claim that a file was modified unless the corresponding tool successfully executed.

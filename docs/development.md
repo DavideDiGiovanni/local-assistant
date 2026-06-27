@@ -50,6 +50,9 @@ Current Vault tools:
 - `search_notes`
 - `append_note`
 - `write_note`
+- `list_folders`
+- `create_folder`
+- `delete_folder`
 
 ## Local setup
 
@@ -83,6 +86,42 @@ local-assistant \
   --vault-path examples/sample_vault \
   search-notes Vault
 ```
+
+### Folder commands
+
+List folders in the Vault root:
+
+```bash
+local-assistant --vault-path examples/sample_vault list-folders
+```
+
+List folders inside a nested folder:
+
+```bash
+local-assistant --vault-path examples/sample_vault list-folders projects
+```
+
+Create a folder:
+
+```bash
+local-assistant --vault-path examples/sample_vault create-folder projects
+```
+
+Create a nested folder:
+
+```bash
+local-assistant --vault-path examples/sample_vault create-folder projects/salesforce
+```
+
+Delete an empty folder:
+
+```bash
+local-assistant --vault-path examples/sample_vault delete-folder projects/archive
+```
+
+Folder deletion is intentionally conservative. It only deletes empty folders and refuses to delete files, symlinks, non-empty folders, the Vault root, or paths outside the Vault.
+
+### Real Vault
 
 Use a real Vault:
 
@@ -416,6 +455,7 @@ Current read-only operations:
 
 - `read_note`
 - `search_notes`
+- `list_folders`
 
 The command must not execute write operations unless `--confirm` is passed.
 
@@ -423,6 +463,8 @@ Current write operations:
 
 - `append_note`
 - `write_note`
+- `create_folder`
+- `delete_folder`
 
 Example:
 
